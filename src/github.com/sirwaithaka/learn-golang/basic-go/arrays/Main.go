@@ -75,4 +75,8 @@ func main() {
 	fmt.Printf("Remove 3rd element from slice: %v\n", s)
 	fmt.Printf("Slice: %v\n", p)
 	fmt.Println()
+
+	// accessing an out of bound value in a slice
+	// throws an error: index out of range
+	fmt.Printf("accessing an out of bound value in a slice: %v", a[10])
 }
