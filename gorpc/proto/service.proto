@@ -1,0 +1,24 @@
+// This is essentially a stub that tells go
+//  how it should encode and decode the various
+// pieces of data
+
+syntax = "proto3"; // The syntax of the protocol buffer
+
+package proto; // package definition
+
+// Data structure that we want for the request
+// Request serialization
+message Request {
+    int64 a = 1; // 
+    int64 b = 2; //
+}
+
+message Response {
+    int64 result = 1;
+}
+
+// Defines the various procedure calls that we want
+service AddService {
+    rpc Add(Request) returns (Response);
+    rpc Multiply(Request) returns (Response);
+}
