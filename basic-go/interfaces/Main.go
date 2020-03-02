@@ -44,6 +44,17 @@ func main() {
 	} else {
 		fmt.Println("conversion failed")
 	}
+
+	// type switching in golang
+	var t interface{} = 0
+	switch t.(type) {
+	case int:
+		fmt.Printf("t is an integer")
+	case string:
+		fmt.Println("t is a string")
+	default:
+		fmt.Println("Dont know wat that is!")
+	}
 }
 
 // Interfaces describe relationships
