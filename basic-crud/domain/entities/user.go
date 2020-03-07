@@ -1,26 +1,59 @@
 package entities
 
-type Advert struct {
-	Id                string
-	Name              string
-	MediaURL          string
-	MediaKey          string
-	ThumbnailURL      string
-	MediaType         string
-	ConversionCount   int
-	ConversionMessage string
-	ConversionType    string
-	CampaignType      string
+import (
+	"basic-crud/storage"
+	"github.com/jinzhu/gorm"
+	"log"
+)
+
+type User struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
-//advert_id = db.Column(db.String(256), index=True, primary_key=True, unique=True)
-//name = db.Column(db.String(1024), index=True)
-//media_url = db.Column(db.String(1024), index=True)
-//media_key = db.Column(db.String(512), index=True)
-//thumbnail_url = db.Column(db.String(1024), index=True)
-//media_type = db.Column(db.String(10), index=True)
-//conversion_count = db.Column(db.Integer, default=0)
-//conversion_url = db.Column(db.String(1024), index=True)
-//conversion_message = db.Column(db.String(128), index=True)
-//conversion_type = db.Column(db.String(128), index=True)
-//campaign_type = db.Column(db.String(24), default='advert', nullable=False)
+type Repository interface {
+	Add([]User) error
+	GetAll() []User
+	Delete()
+}
+
+type repository struct {
+	db storage.Database
+}
+
+func NewRepository(db storage.Database) Repository {
+	return &repository{db}
+}
+
+func (repo repository) DB() *gorm.DB {
+	return repo.db.Connection()
+}
+
+func (repo repository) Add(users []User) error {
+
+	for _, u := range users {
+
+		var user User
+		result := repo.DB().Where(User{ID: u.ID}).Assign(u).FirstOrCreate(&user)
+		if err := result.Error; err != nil {
+			log.Println(err)
+		}
+
+		log.Println(user)
+	}
+	return nil
+}
+
+func (repo repository) GetAll() []User {
+	var users []User
+	result := repo.DB().Find(&users)
+	if err := result.Error; err != nil {
+		log.Println(err)
+		return nil
+	}
+	return users
+}
+
+func (repo repository) Delete() {
+	repo.DB().Delete(User{})
+}

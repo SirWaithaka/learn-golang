@@ -1,32 +1,44 @@
 package main
 
 import (
+	"basic-crud/storage/sqlite"
+	"encoding/json"
 	"fmt"
-	"github.com/sirwaithaka/learn-golang/basic-crud/pkg/network/service"
 	"log"
-	"net/http"
-	"os"
+	"strings"
 
-	"github.com/sirwaithaka/learn-golang/basic-crud/pkg/http/rest"
-	"github.com/sirwaithaka/learn-golang/basic-crud/pkg/registry"
-	"github.com/sirwaithaka/learn-golang/basic-crud/pkg/storage/sqlite"
+	"basic-crud/domain/entities"
 )
 
 func main() {
-	var port string = fmt.Sprintf(":%d", 5000)
-	fmt.Printf("Server has been started on port: %s\n", port)
+	jsonStr :=
+		`[{	"name": "mary",	"id": 11},
+		{ "name": "kenn", "id": 12}]`
 
-	config := GetConfig(os.Getenv("YOUTISE_ENV"))
+	var users []entities.User
+	err := json.NewDecoder(strings.NewReader(jsonStr)).Decode(&users)
+	if err != nil {
+		fmt.Printf("Error occured decoding %v", err)
+	}
+
+	db, err := sqlite.GetDatabase()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer db.Close()
 
 	sqlite.Migrate()
 
-	db, _ := sqlite.GetDatabase()
-	defer db.Close()
+	var userRepo entities.Repository = entities.NewRepository(db)
+	err = userRepo.Add(users)
+	if err != nil {
+		log.Println(err)
+	}
 
-	client := service.NewHTTPClient(service.NewClient(), config.YoutiseURL)
+	fmt.Printf("users after add %v\n", userRepo.GetAll())
 
-	r := registry.New(db.Connection(), client)
-	controller := r.NewAppController()
+	//userRepo.Delete()
 
-	log.Fatal(http.ListenAndServe(port, rest.Router(controller)))
+	//fmt.Printf("users after delete %v\n", userRepo.GetAll())
 }

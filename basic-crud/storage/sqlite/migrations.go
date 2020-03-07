@@ -1,5 +1,10 @@
 package sqlite
 
+import (
+	"basic-crud/domain/entities"
+	"log"
+)
+
 // Migrate handles all migrations
 func Migrate() {
 
@@ -9,5 +14,6 @@ func Migrate() {
 		return
 	}
 
-	(*database).conn.AutoMigrate(Device{})
+	(*database).conn.AutoMigrate(entities.User{})
+	log.Println("migrated")
 }
