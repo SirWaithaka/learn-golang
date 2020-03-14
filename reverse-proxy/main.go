@@ -1,11 +1,12 @@
 package main
 
 import (
-"log"
-"net/http"
-"net/http/httputil"
-"net/url"
-"os"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"strings"
 )
 
 // Get env var or default
@@ -16,28 +17,28 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-/*
-	Getters
-*/
-
 // Get the port to listen on
 func getListenAddress() string {
 	port := getEnv("PORT", "1338")
 	return ":" + port
 }
 
-
 // Log the typeform payload and redirect url
 func logRequestPayload(req *http.Request) {
+	if strings.Contains(req.URL.String(), "_next") {
+		return
+	}
+	if strings.Contains(req.URL.String(), "/cdn-cgi") {
+		return
+	}
+
 	log.Printf("%s : %s from %s\n", req.Method, req.URL, req.RemoteAddr)
 }
 
 // Log the env variables required for a reverse proxy
 func logSetup() {
-	defaultProxyURL := os.Getenv("PROXY_URL")
 
 	log.Printf("Server will run on: %s\n", getListenAddress())
-	log.Printf("Redirecting to Default url: %s\n", defaultProxyURL)
 }
 
 /*
@@ -60,6 +61,9 @@ func serveReverseProxy(target string, res http.ResponseWriter, req *http.Request
 	req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
 	req.Host = proxyURL.Host
 
+	log.Printf("host %v", req.Header.Get("Host"))
+	log.Printf("request headers %v", req.Header)
+
 	// Note that ServeHttp is non blocking and uses a go routine under the hood
 	proxy.ServeHTTP(res, req)
 }
@@ -68,6 +72,10 @@ func serveReverseProxy(target string, res http.ResponseWriter, req *http.Request
 func handleRequestAndRedirect(res http.ResponseWriter, req *http.Request) {
 
 	proxyURL := os.Getenv("PROXY_URL")
+	if proxyURL == "" {
+		proxyURL = "https://splash.youtise.com"
+	}
+
 
 	logRequestPayload(req)
 
@@ -77,12 +85,6 @@ func handleRequestAndRedirect(res http.ResponseWriter, req *http.Request) {
 func main() {
 	// Log setup values
 	logSetup()
-
-	proxy := os.Getenv("PROXY_URL")
-	if proxy == "" {
-		log.Println("Proxy url not set")
-		os.Exit(2)
-	}
 
 	// start server
 	http.HandleFunc("/", handleRequestAndRedirect)

@@ -19,28 +19,22 @@ func NewReverseProxy(addr string) *ReverseProxy {
 	}
 }
 
-// ReverseProxy reverse handler using fashttp.HostClient
 type ReverseProxy struct {
 	client *fasthttp.HostClient
 }
 
 // ServeHTTP ReverseProxy to serve
-// ref to: https://golang.org/src/net/http/httputil/reverseproxy.go#L169
 func (p *ReverseProxy) ServeHTTP(ctx *fasthttp.RequestCtx) {
 	req := &ctx.Request
 	res := &ctx.Response
 
-	log.Printf("REquest uri %v", string(req.RequestURI()))
 	log.Printf("uri %v", req.URI())
-	log.Printf("REquest uri %v", string(req.RequestURI()))
 
-	ReplaceRequestPath("/page", "")(ctx)
-
-	log.Printf("New Request uri %v", req.URI().String())
 
 	// prepare request(replace headers and some URL host)
 	if clientIP, _, err := net.SplitHostPort(ctx.RemoteAddr().String()); err == nil {
 		req.Header.Add("X-Forwarded-For", clientIP)
+		req.Header.Add("X-Forwarded-Host", p.client.Addr)
 	}
 
 	// to save all response header
@@ -104,24 +98,6 @@ func ReplaceRequestPath(old, new string) func(ctx *fasthttp.RequestCtx) {
 		}
 		req.SetRequestURI(u.RequestURI())
 	}
-}
-
-
-// SetClient ...
-func (p *ReverseProxy) SetClient(addr string) *ReverseProxy {
-	p.client.Addr = addr
-	return p
-}
-
-// Reset ...
-func (p *ReverseProxy) Reset() {
-	p.client.Addr = ""
-}
-
-// Close ...
-func (p *ReverseProxy) Close() {
-	p.client = nil
-	p = nil
 }
 
 

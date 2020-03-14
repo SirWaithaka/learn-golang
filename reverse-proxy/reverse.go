@@ -1,26 +1,44 @@
 package main
 
-// A proxy server for fasthttp.
-
 import (
-	"log"
-
 	"github.com/valyala/fasthttp"
+	"log"
+	"net/url"
+	"os"
 	proxy "reverse_proxy/fashttp"
 )
 
-var (
-	proxyServer = proxy.NewReverseProxy("localhost:3000")
-)
+// A proxy server for fasthttp.
+
 
 // ProxyHandler ... fasthttp.RequestHandler func
-func ProxyHandler(ctx *fasthttp.RequestCtx) {
+func ProxyHandler(proxyServer *proxy.ReverseProxy) func(*fasthttp.RequestCtx) {
 	// all proxy to localhost
-	proxyServer.ServeHTTP(ctx)
+
+	return func(ctx *fasthttp.RequestCtx) {
+		proxyServer.ServeHTTP(ctx)
+	}
 }
 
 func main() {
-	if err := fasthttp.ListenAndServe(":2720", ProxyHandler); err != nil {
+
+	if os.Getenv("PROXY_URL") == "" {
+		log.Printf("PROXY_URL env not set!")
+		os.Exit(1)
+	}
+
+	proxyServer := proxy.NewReverseProxy(os.Getenv("PROXY_URL"))
+
+	addr, err := url.Parse(os.Getenv("PROXY_URL"))
+	if err != nil {
+		log.Println(err)
+		os.Exit(2)
+	}
+	log.Printf("addr scheme %v", addr.Scheme)
+
+	if err := fasthttp.ListenAndServe(":2721", ProxyHandler(proxyServer)); err != nil {
 		log.Fatal(err)
 	}
 }
+
+
